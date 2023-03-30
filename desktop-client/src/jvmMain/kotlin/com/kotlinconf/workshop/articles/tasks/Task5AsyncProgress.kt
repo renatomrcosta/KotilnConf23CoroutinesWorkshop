@@ -8,18 +8,10 @@ import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
 
 fun BlogService.observeArticlesConcurrently(): Flow<Article> {
-    return channelFlow {
-        val list = getArticleInfoList()
-        for (articleInfo in list) {
-            launch {
-                send(Article(articleInfo, getComments(articleInfo)))
-            }
-        }
-    }
+    TODO()
 }
 
 fun BlogService.observeArticlesConcurrentlyWithProgress(): Flow<List<Article>> {
-    return observeArticlesConcurrently()
-        .runningFold(listOf()) { list, article -> list + article }
+    TODO()
 }
 

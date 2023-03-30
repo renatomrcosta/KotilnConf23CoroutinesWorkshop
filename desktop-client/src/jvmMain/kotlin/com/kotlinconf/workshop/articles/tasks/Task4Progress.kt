@@ -7,13 +7,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.runningFold
 
 fun BlogService.observeArticlesLoading(): Flow<Article> = flow {
-    val list = getArticleInfoList()
-    for (articleInfo in list) {
-        emit(Article(articleInfo, getComments(articleInfo)))
-    }
+    TODO()
 }
 
 fun BlogService.observeArticlesLoadingWithProgress(): Flow<List<Article>> {
-    return observeArticlesLoading()
-        .runningFold(listOf()) { list, article -> list + article }
+    TODO()
 }

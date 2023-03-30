@@ -78,25 +78,13 @@ class KettleService {
     }
 
     fun observeTemperature(): Flow<CelsiusTemperature?> = flow {
-        // initial code:
-//        emit(getTemperature())
-        while (true) {
-            delay(1000)
-            emit(getTemperature())
-        }
+        emit(getTemperature())
     }
 
     fun observeKettleState(): Flow<KettleState> = flow {
-        // initial code:
-//        val socketSession = openWebSocketSession()
-//        val kettleState: KettleState = socketSession.receiveDeserialized()
-//        log("Received element via websocket: $kettleState")
-
         val socketSession = openWebSocketSession()
-        while (true) {
-            val kettleState: KettleState = socketSession.receiveDeserialized()
-            log("Received element via websocket: $kettleState")
-            emit(kettleState)
-        }
+        val kettleState: KettleState = socketSession.receiveDeserialized()
+        log("Received element via websocket: $kettleState")
+
     }
 }

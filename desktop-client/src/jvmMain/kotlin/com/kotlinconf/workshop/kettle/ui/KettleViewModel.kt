@@ -8,9 +8,7 @@ import com.kotlinconf.workshop.util.log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-// initial code:
-//const val ALLOW_UNSTABLE_NETWORK = false
-const val ALLOW_UNSTABLE_NETWORK = true
+const val ALLOW_UNSTABLE_NETWORK = false
 
 class KettleViewModel(
     private val kettleService: KettleService,
@@ -31,9 +29,7 @@ class KettleViewModel(
         CoroutineExceptionHandler { _, throwable -> showErrorMessage(throwable) }
 
     private val scope = CoroutineScope(
-        // initial code:
-//        parentScope.coroutineContext
-        parentScope.coroutineContext + SupervisorJob() + coroutineExceptionHandler
+        parentScope.coroutineContext
     )
 
     private val _stableNetwork = mutableStateOf(true)
@@ -57,33 +53,10 @@ class KettleViewModel(
 
     val kettleState: Flow<KettleState> =
         kettleService.observeKettleState()
-//            .stateIn(scope, SharingStarted.Lazily, KettleState.OFF)
-            .shareIn(scope, SharingStarted.Lazily)
 
     val celsiusTemperature: Flow<CelsiusTemperature?> =
         kettleService.observeTemperature()
-            // initial code: no stateIn
-            .shareIn(scope, SharingStarted.Lazily)
-//            .stateIn(scope, SharingStarted.Lazily, null)
 
     val fahrenheitTemperature: Flow<FahrenheitTemperature?> =
-    // initial code:
-//        flowOf(null)
-        celsiusTemperature.map { it?.toFahrenheit() }
-
-    // Alternative implementation using StateFlow
-    val _celsiusStateFlow = MutableStateFlow<CelsiusTemperature?>(null)
-    val celsiusStateFlow: StateFlow<CelsiusTemperature?> get() = _celsiusStateFlow
-
-    val fahrenheitStateFlow = MutableStateFlow<FahrenheitTemperature?>(null)
-    val _fahrenheitStateFlow: StateFlow<FahrenheitTemperature?> get() = fahrenheitStateFlow
-
-    init {
-        scope.launch {
-            kettleService.observeTemperature().collect {
-                _celsiusStateFlow.value = it
-                fahrenheitStateFlow.value = it?.toFahrenheit()
-            }
-        }
-    }
+        flowOf(null)
 }

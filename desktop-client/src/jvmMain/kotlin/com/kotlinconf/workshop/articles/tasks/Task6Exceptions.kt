@@ -14,25 +14,10 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retry
 
 suspend fun BlogService.loadArticlesUnstable(): List<Article> = coroutineScope {
-    val articleInfoList = getArticleInfoList()
-    val deferreds = articleInfoList.map { article ->
-        async {
-            try {
-                Article(article, getCommentsUnstable(article))
-            } catch (e: CancellationException) {
-                log("Loading ${article.title} was canceled: ${e.message}")
-                throw e
-            }
-        }
-    }
-    deferreds.awaitAll()
+    TODO()
 }
 
 suspend fun BlogService.getCommentsWithRetry(articleInfo: ArticleInfo): List<Comment> {
     // initial code:
-//    return getCommentsUnstable(articleInfo)
-    val flow = flow {
-        emit(getCommentsUnstable(articleInfo))
-    }
-    return flow.retry(retries = 5).first()
+    return getCommentsUnstable(articleInfo)
 }
