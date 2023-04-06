@@ -14,17 +14,17 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.kotlinconf.workshop.kettle.CelsiusTemperature
 import com.kotlinconf.workshop.kettle.FahrenheitTemperature
-import com.kotlinconf.workshop.kettle.KettleState
+import com.kotlinconf.workshop.kettle.KettlePowerState
+import com.kotlinconf.workshop.kettle.celsius
 
 @Composable
 fun KettleView(kettleViewModel: KettleViewModel) {
     KettleView(
-        kettleViewModel.kettleState.collectAsState(KettleState.OFF).value,
-        kettleViewModel.isStableNetwork.value,
-        kettleViewModel::setStableNetwork,
+        kettleViewModel.kettlePowerState.collectAsState(KettlePowerState.OFF).value,
         kettleViewModel.errorMessage.value,
         kettleViewModel.celsiusTemperature.collectAsState(null).value,
         kettleViewModel.fahrenheitTemperature.collectAsState(null).value,
+        kettleViewModel.smoothCelsiusTemperature.collectAsState(0.0.celsius).value,
         kettleViewModel::switchOn,
         kettleViewModel::switchOff,
     )
@@ -32,12 +32,11 @@ fun KettleView(kettleViewModel: KettleViewModel) {
 
 @Composable
 fun KettleView(
-    kettleState: KettleState,
-    isStable: Boolean,
-    onStableChange: (Boolean) -> Unit,
+    kettlePowerState: KettlePowerState,
     errorMessage: String,
     celsiusTemperature: CelsiusTemperature?,
     fahrenheitTemperature: FahrenheitTemperature?,
+    smoothedCelsiusTemperature: CelsiusTemperature,
     switchOn: () -> Unit,
     switchOff: () -> Unit,
 ) {
@@ -54,7 +53,7 @@ fun KettleView(
                 imageVector = Icons.Filled.PlayCircle,
                 color = MaterialTheme.colors.secondary,
                 onClick = switchOn,
-                enabled = kettleState == KettleState.OFF,
+                enabled = kettlePowerState == KettlePowerState.OFF,
             )
             ActionButton(
                 modifier = Modifier.fillMaxWidth(),
@@ -62,29 +61,21 @@ fun KettleView(
                 imageVector = Icons.Filled.StopCircle,
                 color = MaterialTheme.colors.primary,
                 onClick = switchOff,
-                enabled = kettleState == KettleState.ON,
+                enabled = kettlePowerState == KettlePowerState.ON,
             )
 
             Button(
                 onClick = switchOn,
-                enabled = kettleState == KettleState.OFF,
+                enabled = kettlePowerState == KettlePowerState.OFF,
             ) {
                 Text("On")
             }
             Button(
                 onClick = switchOff,
-                enabled = kettleState == KettleState.ON,
+                enabled = kettlePowerState == KettlePowerState.ON,
             ) {
                 Text("Off")
             }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(
-                checked = isStable,
-                onCheckedChange = onStableChange,
-                enabled = ALLOW_UNSTABLE_NETWORK
-            )
-            Text("Stable network")
         }
         if (errorMessage.isNotEmpty()) {
             Text(text = errorMessage, color = MaterialTheme.colors.error, style = MaterialTheme.typography.caption)
@@ -97,6 +88,13 @@ fun KettleView(
         Text("${celsiusTemperature ?: '?'} C", style = MaterialTheme.typography.h4)
         Spacer(modifier = Modifier.height(10.dp))
         Text("${fahrenheitTemperature ?: '?'} F", style = MaterialTheme.typography.h4)
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            modifier = Modifier.padding(20.dp),
+            text = "Smoothed temperature:",
+            style = MaterialTheme.typography.h6
+        )
+        Text("$smoothedCelsiusTemperature C", style = MaterialTheme.typography.h4)
     }
 }
 

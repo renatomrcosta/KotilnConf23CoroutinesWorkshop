@@ -19,8 +19,17 @@ import kotlinx.coroutines.flow.*
 class ArticlesViewModel(
     private val blockingService: BlogServiceBlocking,
     private val service: BlogService,
-    private val scope: CoroutineScope
+    parentScope: CoroutineScope
 ) {
+    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, exception ->
+        markLoadingCompletion(exception)
+    }
+
+    // Task X.
+    // initial code: Job()
+    // Replace Job() with SupervisorJob() and make sure the app keeps working on a child failure (LoadingMode.UNSTABLE_NETWORK).
+    private val scope = CoroutineScope(parentScope.coroutineContext + SupervisorJob() + coroutineExceptionHandler)
+
     var loadingMode by mutableStateOf(BLOCKING)
         private set
 
@@ -56,53 +65,46 @@ class ArticlesViewModel(
         }
     }
 
-
-    private val coroutineExceptionHandler = CoroutineExceptionHandler { _, exception ->
-        markLoadingCompletion(exception)
-    }
-
     fun loadComments() {
         saveParams(loadingMode)
         clearResults()
         cancellationEnabled = true
-        loadingJob = scope.launch(SupervisorJob() + coroutineExceptionHandler) {
+        loadingJob = scope.launch {
             val startTime = System.currentTimeMillis()
             when (loadingMode) {
                 BLOCKING -> {
-                    val articles = blockingService.loadArticles()
-                    updateResults(articles, startTime)
+                    val articleList = loadArticles(blockingService)
+                    updateResults(articleList, startTime)
                 }
                 SUSPENDING -> {
-                    val articles = service.loadArticles()
-                    updateResults(articles, startTime)
+                    val articleList = loadArticles(service)
+                    updateResults(articleList, startTime)
                 }
                 CONCURRENT -> {
-                    val articles = service.loadArticlesConcurrently()
-                    updateResults(articles, startTime)
+                    val articleList = loadArticlesConcurrently(service)
+                    updateResults(articleList, startTime)
                 }
-                NON_CANCELLABLE -> {
-                    val articles = service.loadArticlesNonCancelable()
-                    updateResults(articles, startTime)
+
+                NON_CANCELABLE -> {
+                    val articleList = loadArticlesNonCancelable(service)
+                    updateResults(articleList, startTime)
                 }
+
                 WITH_PROGRESS -> {
-                    service.observeArticlesLoadingWithProgress()
-                        .onEach { updateResults(it, startTime, completed = false) }
-                        .onCompletion {
-                            markLoadingCompletion(it)
-                        }
-                        .collect()
+                    val articleFlow = observeArticlesLoading(service)
+                    updateResultsWithProgress(articleFlow, startTime)
                 }
                 CONCURRENT_WITH_PROGRESS -> {
-                    service.observeArticlesConcurrentlyWithProgress()
-                        .onEach { updateResults(it, startTime, completed = false) }
-                        .onCompletion {
-                            markLoadingCompletion(it)
-                        }
-                        .collect()
+                    val articleFlow = observeArticlesConcurrently(service)
+                    updateResultsWithProgress(articleFlow, startTime)
                 }
-                UNSTABLE -> {
-                    val articles = service.loadArticlesUnstable()
-                    updateResults(articles, startTime)
+                UNSTABLE_NETWORK -> {
+                    val articles = observeArticlesUnstable(service)
+                    updateResultsWithProgress(articles, startTime)
+                }
+                UNSTABLE_WITH_RETRY -> {
+                    val articles = observeArticlesUnstableWithRetry(service)
+                    updateResultsWithProgress(articles, startTime)
                 }
             }
         }
@@ -119,6 +121,17 @@ class ArticlesViewModel(
         if (completed) {
             markLoadingCompletion()
         }
+    }
+
+    private suspend fun updateResultsWithProgress(
+        articleFlow: Flow<Article>,
+        startTime: Long
+    ) {
+        articleFlow
+            .runningFold(listOf<Article>()) { list, article -> list + article }
+            .onEach { updateResults(it, startTime, completed = false) }
+            .onCompletion { markLoadingCompletion(it) }
+            .collect()
     }
 
     private fun markLoadingCompletion(throwable: Throwable? = null) {

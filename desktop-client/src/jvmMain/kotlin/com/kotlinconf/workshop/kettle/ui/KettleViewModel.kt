@@ -8,8 +8,6 @@ import com.kotlinconf.workshop.util.log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
-const val ALLOW_UNSTABLE_NETWORK = false
-
 class KettleViewModel(
     private val kettleService: KettleService,
     parentScope: CoroutineScope,
@@ -32,13 +30,6 @@ class KettleViewModel(
         parentScope.coroutineContext
     )
 
-    private val _stableNetwork = mutableStateOf(true)
-    val isStableNetwork get() = _stableNetwork
-    fun setStableNetwork(stable: Boolean) {
-        _stableNetwork.value = stable
-        kettleService.changeNetworkStability(stable)
-    }
-
     fun switchOn() {
         scope.launch {
             kettleService.switchOn(100.0.celsius)
@@ -51,12 +42,51 @@ class KettleViewModel(
         }
     }
 
-    val kettleState: Flow<KettleState> =
-        kettleService.observeKettleState()
+    val kettlePowerState: Flow<KettlePowerState> =
+        kettleService.observeKettlePowerState()
+//            .stateIn(scope, SharingStarted.Lazily, KettleState.OFF)
+            .shareIn(scope, SharingStarted.Lazily)
 
     val celsiusTemperature: Flow<CelsiusTemperature?> =
         kettleService.observeTemperature()
 
     val fahrenheitTemperature: Flow<FahrenheitTemperature?> =
-        flowOf(null)
+    // initial code:
+//        flowOf(null)
+        celsiusTemperature.map { it?.toFahrenheit() }
+
+    val smoothCelsiusTemperature: Flow<CelsiusTemperature> =
+        celsiusTemperature
+            .filterNotNull()
+            .map { it.value }
+            .averageOfLast(5)
+            .map { it.celsius }
+
+
+    // Alternative implementation using StateFlow
+    private val _celsiusStateFlow = MutableStateFlow<CelsiusTemperature?>(null)
+    val celsiusStateFlow: StateFlow<CelsiusTemperature?> get() = _celsiusStateFlow
+
+    private val _fahrenheitStateFlow = MutableStateFlow<FahrenheitTemperature?>(null)
+    val fahrenheitStateFlow: StateFlow<FahrenheitTemperature?> get() = _fahrenheitStateFlow
+
+    init {
+        scope.launch {
+            kettleService.observeTemperature().collect {
+                _celsiusStateFlow.value = it
+                _fahrenheitStateFlow.value = it?.toFahrenheit()
+            }
+        }
+    }
+}
+
+private fun Flow<Double>.averageOfLast(n: Int): Flow<Double> = flow {
+    val deque = ArrayDeque<Double>(n)
+    this@averageOfLast.collect {
+        if (deque.size > n) {
+            deque.removeFirst()
+        }
+        deque.addLast(it)
+        emit(deque.average())
+    }
 }

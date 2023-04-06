@@ -4,26 +4,17 @@ import io.ktor.server.application.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 
 fun Application.setupIssueTracker(): IssueTracker {
     val issueTracker = IssueTracker()
-    val vUser = VirtualUser()
+    val vUser = GlobalVirtualUser.instance
     repeat(20) {
         vUser.createRandomIssue(issueTracker)
     }
     repeat(200) {
         vUser.createRandomCommentEvent(issueTracker)
     }
-//    vUser.beginPosting(this, issueTracker) // TODO: is there a nicer syntax for this without context receivers? :)
-//    launch {
-//        issueTracker.issueEvents.onEach {
-//            println(it)
-//        }.collect()
-//    }
     return issueTracker
 }
 
@@ -56,7 +47,6 @@ class IssueTracker {
         MutableSharedFlow<IssueEvent>(onBufferOverflow = BufferOverflow.DROP_OLDEST, replay = 1)
     val issueEvents = _issueEvents.asSharedFlow()
 
-    // this function seems very much not thread safe
     fun addComment(issueId: IssueId, comment: Comment) {
         val issue = allIssues().firstOrNull { it.id == issueId } ?: return
         val allComments = comments.getOrPut(issue.id) { mutableListOf() }
@@ -71,7 +61,6 @@ class IssueTracker {
     }
 
     fun addIssue(author: User, title: String): Issue {
-        // TODO: This is very much not thread-safe :)
         val newId = IssueId(allIssues().maxOf { it.id.id } + 1)
         val newIssue = Issue(id = newId, author = author, title = title, status = IssueStatus.OPEN)
         issues.add(newIssue)

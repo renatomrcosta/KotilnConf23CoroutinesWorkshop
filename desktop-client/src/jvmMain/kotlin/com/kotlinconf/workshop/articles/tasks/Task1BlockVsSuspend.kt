@@ -7,10 +7,10 @@ import com.kotlinconf.workshop.blog.ArticleInfo
 // TODO
 // Implement 'loadArticlesWithComments' in two versions: blocking and suspend
 
-fun BlogServiceBlocking.loadArticles(): List<Article> {
+fun loadArticles(serviceBlocking: BlogServiceBlocking): List<Article> {
     TODO()
 }
 
-suspend fun BlogService.loadArticles(): List<Article> {
+suspend fun loadArticles(service: BlogService): List<Article> {
     TODO()
 }
