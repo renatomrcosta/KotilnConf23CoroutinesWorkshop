@@ -9,30 +9,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class IssuesViewModel(val issuesService: IssuesService) {
     private val scope = CoroutineScope(SupervisorJob())
-    private val _issueFlow: MutableStateFlow<List<Issue>> = MutableStateFlow(listOf())
-    val issueFlow: StateFlow<List<Issue>> get() = _issueFlow
 
-    private val _commentFlow: MutableStateFlow<List<Comment>> = MutableStateFlow(listOf())
-    val commentFlow: StateFlow<List<Comment>> get() = _commentFlow
+    val issueFlow = flowOf<List<Issue>>()
 
-    init {
-        scope.launch {
-            issuesService.getEvents().collect { event ->
-                when (event) {
-                    is AddCommentToIssueEvent -> _commentFlow.update { oldList ->
-                        oldList + event.comment
-                    }
+    val commentFlow = flowOf<List<Comment>>()
 
-                    is CreateIssueEvent -> _issueFlow.update { oldList ->
-                        oldList + event.issue
-                    }
-                }
-            }
-        }
-    }
+
 }

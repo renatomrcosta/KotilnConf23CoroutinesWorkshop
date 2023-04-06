@@ -63,36 +63,24 @@ open class NetworkKettleService : KettleService {
         client.post(offEndpoint)
     }
 
-    private suspend fun getTemperature(): CelsiusTemperature? {
+    private suspend fun getTemperature(): CelsiusTemperature {
         val response = client.get(temperatureEndpoint())
         if (!response.status.isSuccess()) {
             log("Network error occurred: ${response.status}")
-            return null
         }
         return response.body<CelsiusTemperature>()
             .also { log("Loading temperature: $it Celsius") }
     }
 
-    override fun observeTemperature(): Flow<CelsiusTemperature?> = flow {
+    override fun observeTemperature(): Flow<CelsiusTemperature> = flow {
         // initial code:
-//        emit(getTemperature())
-        while (true) {
-            delay(1000)
-            emit(getTemperature())
-        }
+        emit(getTemperature())
     }
 
     override fun observeKettlePowerState(): Flow<KettlePowerState> = flow {
         // initial code:
-//        val socketSession = openWebSocketSession()
-//        val kettlePowerState: KettlePowerState = socketSession.receiveDeserialized()
-//        log("Received element via websocket: $kettlePowerState")
-
         val socketSession = openWebSocketSession()
-        while (true) {
-            val kettlePowerState: KettlePowerState = socketSession.receiveDeserialized()
-            log("Received element via websocket: $kettlePowerState")
-            emit(kettlePowerState)
-        }
+        val kettlePowerState: KettlePowerState = socketSession.receiveDeserialized()
+        log("Received element via websocket: $kettlePowerState")
     }
 }
