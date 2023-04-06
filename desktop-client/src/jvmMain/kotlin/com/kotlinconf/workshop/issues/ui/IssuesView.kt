@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun IssuesView(viewModel: IssuesViewModel) {
-    val issues = viewModel.issueFlow.collectAsState()
-    val comments = viewModel.commentFlow.collectAsState()
+    val issues = viewModel.issueFlow.collectAsState(listOf())
+    val comments = viewModel.commentFlow.collectAsState(listOf())
     Column(Modifier.fillMaxSize()) {
         Text(
             modifier = Modifier.fillMaxWidth(),
