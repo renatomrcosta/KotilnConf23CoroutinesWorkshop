@@ -5,32 +5,16 @@ import com.kotlinconf.workshop.WorkshopServerConfig.PORT
 import com.kotlinconf.workshop.WorkshopServerConfig.WS_SERVER_URL
 import com.kotlinconf.workshop.kettle.CelsiusTemperature
 import com.kotlinconf.workshop.kettle.KettlePowerState
+import com.kotlinconf.workshop.network.WorkshopKtorService
 import com.kotlinconf.workshop.util.log
-import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.websocket.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.json.Json
 
-open class NetworkKettleService : KettleService {
-    private val client = HttpClient {
-        install(ContentNegotiation) {
-            json(Json {
-                prettyPrint = true
-                isLenient = true
-            })
-        }
-        install(WebSockets) {
-            contentConverter = KotlinxWebsocketSerializationConverter(Json)
-        }
-    }
+class NetworkKettleService : KettleService, WorkshopKtorService(configureWebsockets = true) {
     private var stableNetwork = true
     private val host = "http://0.0.0.0:9020/"
     private val onEndpoint = "$host/kettle/on"
@@ -52,11 +36,8 @@ open class NetworkKettleService : KettleService {
         }
     }
 
-    override suspend fun switchOn(desiredTemperature: CelsiusTemperature) {
-        client.post(onEndpoint) {
-            contentType(ContentType.Application.Json)
-            setBody(desiredTemperature)
-        }
+    override suspend fun switchOn() {
+        client.post(onEndpoint)
     }
 
     override suspend fun switchOff() {
@@ -65,20 +46,17 @@ open class NetworkKettleService : KettleService {
 
     private suspend fun getTemperature(): CelsiusTemperature {
         val response = client.get(temperatureEndpoint())
-        if (!response.status.isSuccess()) {
-            log("Network error occurred: ${response.status}")
-        }
         return response.body<CelsiusTemperature>()
             .also { log("Loading temperature: $it Celsius") }
     }
 
+    // Task. Create a flow that emits the kettle temperature every second
     override fun observeTemperature(): Flow<CelsiusTemperature> = flow {
-        // initial code:
         emit(getTemperature())
     }
 
+    // Task. Create a flow that emits the Kettle power state whenever it receives a WebSocket message
     override fun observeKettlePowerState(): Flow<KettlePowerState> = flow {
-        // initial code:
         val socketSession = openWebSocketSession()
         val kettlePowerState: KettlePowerState = socketSession.receiveDeserialized()
         log("Received element via websocket: $kettlePowerState")

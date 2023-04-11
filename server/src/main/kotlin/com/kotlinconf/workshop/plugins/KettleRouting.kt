@@ -13,8 +13,7 @@ import kotlin.random.Random
 fun Application.configureKettleRouting(kettle: Kettle) {
     routing {
         post("kettle/on") {
-            val desiredTemperature = call.receive<CelsiusTemperature>()
-            kettle.switchOn(desired = desiredTemperature)
+            kettle.switchOn()
         }
         post("kettle/off") {
             kettle.switchOff()
@@ -26,11 +25,6 @@ fun Application.configureKettleRouting(kettle: Kettle) {
             }
             call.respond(kettle.getTemperature())
         }
-    }
-}
-
-fun Application.configureKettleSockets(kettle: Kettle) {
-    routing {
         webSocket("/kettle-ws") {
             kettle.observeKettleState().collect { state ->
                 sendSerialized(state)

@@ -5,6 +5,7 @@ import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ProvideTextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.unit.dp
@@ -16,33 +17,39 @@ import com.kotlinconf.workshop.articles.network.BlogServiceBlocking
 import com.kotlinconf.workshop.articles.network.createBlogService
 import com.kotlinconf.workshop.articles.ui.ArticlesViewModel
 import com.kotlinconf.workshop.articles.ui.views.ArticlesView
+import com.kotlinconf.workshop.network.WorkshopKtorService
 
 @Composable
 @Preview
-fun App(viewModel: ArticlesViewModel) {
-    ArticlesView(viewModel)
+fun ArticlesApp(viewModel: ArticlesViewModel) {
+    MaterialTheme {
+        ProvideTextStyle(LocalTextStyle.current.copy(letterSpacing = 0.sp)) {
+            ArticlesView(viewModel)
+        }
+    }
+
 }
 
 fun main() = application {
     val coroutineScope = rememberCoroutineScope()
+    val blogService = remember { createBlogService() }
     val viewModel = remember {
         ArticlesViewModel(
             blockingService = BlogServiceBlocking(),
-            service = createBlogService(),
+            service = blogService,
             parentScope = coroutineScope
         )
+    }
+    LaunchedEffect(true) {
+        (blogService as WorkshopKtorService).ensureServerIsRunning()
     }
     Window(
         onCloseRequest = {
             exitApplication()
         },
-        title = "Coroutine Workshop",
-        state = rememberWindowState(width = 800.dp, height = 600.dp),
+        title = "Articles Example",
+        state = rememberWindowState(width = 760.dp, height = 760.dp),
     ) {
-        MaterialTheme() {
-            ProvideTextStyle(LocalTextStyle.current.copy(letterSpacing = 0.sp)) {
-                App(viewModel)
-            }
-        }
+        ArticlesApp(viewModel)
     }
 }

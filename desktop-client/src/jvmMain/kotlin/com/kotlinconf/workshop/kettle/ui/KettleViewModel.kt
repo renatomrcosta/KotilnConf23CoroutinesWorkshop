@@ -2,11 +2,17 @@ package com.kotlinconf.workshop.kettle.ui
 
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import com.kotlinconf.workshop.kettle.*
+import com.kotlinconf.workshop.kettle.CelsiusTemperature
+import com.kotlinconf.workshop.kettle.FahrenheitTemperature
+import com.kotlinconf.workshop.kettle.KettlePowerState
 import com.kotlinconf.workshop.kettle.network.KettleService
 import com.kotlinconf.workshop.util.log
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 
 class KettleViewModel(
     private val kettleService: KettleService,
@@ -32,7 +38,7 @@ class KettleViewModel(
 
     fun switchOn() {
         scope.launch {
-            kettleService.switchOn(100.0.celsius)
+            kettleService.switchOn()
         }
     }
 
@@ -49,9 +55,8 @@ class KettleViewModel(
         kettleService.observeTemperature()
 
     val fahrenheitTemperature: Flow<FahrenheitTemperature?> =
-    // initial code:
         flowOf(null)
 
-    val smoothCelsiusTemperature: Flow<CelsiusTemperature> =
-        celsiusTemperature
+    val smoothCelsiusTemperature: Flow<CelsiusTemperature?> =
+        flowOf(null)
 }

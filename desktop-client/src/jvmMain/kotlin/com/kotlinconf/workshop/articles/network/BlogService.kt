@@ -1,18 +1,13 @@
 package com.kotlinconf.workshop.articles.network
 
-import com.kotlinconf.workshop.WorkshopServerConfig.articlesEndpoint
-import com.kotlinconf.workshop.WorkshopServerConfig.commentsEndpoint
-import com.kotlinconf.workshop.WorkshopServerConfig.commentsUnstableEndpoint
+import com.kotlinconf.workshop.WorkshopServerConfig
 import com.kotlinconf.workshop.blog.ArticleInfo
 import com.kotlinconf.workshop.blog.Comment
+import com.kotlinconf.workshop.network.WorkshopKtorService
 import com.kotlinconf.workshop.util.log
-import io.ktor.client.*
 import io.ktor.client.call.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.Json
 
 interface BlogService {
     suspend fun getArticleInfoList(): List<ArticleInfo>
@@ -24,15 +19,10 @@ interface BlogService {
 
 fun createBlogService(): BlogService = BlogServiceImpl()
 
-private class BlogServiceImpl: BlogService {
-    private val client = HttpClient {
-        install(ContentNegotiation) {
-            json(Json {
-                prettyPrint = true
-                isLenient = true
-            })
-        }
-    }
+private class BlogServiceImpl: BlogService, WorkshopKtorService() {
+    val articlesEndpoint = "${WorkshopServerConfig.WORKSHOP_SERVER_URL}/articles"
+    fun commentsEndpoint(id: Int) = "${WorkshopServerConfig.WORKSHOP_SERVER_URL}/articles/$id/comments"
+    fun commentsUnstableEndpoint(id: Int) = commentsEndpoint(id) + "?failure=0.3"
 
     override suspend fun getArticleInfoList(): List<ArticleInfo> {
         log("Started loading articles")

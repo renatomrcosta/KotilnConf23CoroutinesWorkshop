@@ -14,6 +14,5 @@ fun observeArticlesUnstableWithRetry(service: BlogService): Flow<Article> = flow
 }
 
 suspend fun getCommentsWithRetry(service: BlogService, articleInfo: ArticleInfo): List<Comment> {
-    // initial code:
     return service.getCommentsUnstable(articleInfo)
 }

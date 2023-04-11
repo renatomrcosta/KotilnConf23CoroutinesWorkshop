@@ -1,5 +1,6 @@
 package com.kotlinconf.workshop
 
+import com.kotlinconf.workshop.WorkshopServerConfig.HOST
 import com.kotlinconf.workshop.WorkshopServerConfig.PORT
 import com.kotlinconf.workshop.data.Kettle
 import com.kotlinconf.workshop.plugins.*
@@ -9,20 +10,19 @@ import io.ktor.server.netty.*
 import kotlinx.coroutines.CoroutineScope
 
 fun main() {
-    embeddedServer(Netty, port = PORT, host = "0.0.0.0", module = Application::module)
+    embeddedServer(Netty, port = PORT, host = HOST, module = Application::module)
         .start(wait = true)
 }
 
 fun Application.module() {
     configureMonitoring()
     configureSerialization()
+    configureSockets()
+
+    configureStatusRouting()
     configureArticlesRouting()
     configureWalletRouting()
-    configureSockets()
-    val issueTracker = setupIssueTracker()
-    configureRouting(issueTracker)
-    configureIssueTrackerEventSockets(issueTracker)
     val kettle = Kettle(CoroutineScope(coroutineContext))
     configureKettleRouting(kettle)
-    configureKettleSockets(kettle)
+    configureChatRouting()
 }
