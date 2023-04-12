@@ -12,8 +12,10 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 
 class KettleViewModel(
@@ -55,6 +57,7 @@ class KettleViewModel(
 
     val celsiusTemperature: Flow<CelsiusTemperature> =
         kettleService.observeTemperature()
+            .shareIn(scope, SharingStarted.Lazily)
 
     val fahrenheitTemperature: Flow<FahrenheitTemperature?> =
         celsiusTemperature.map { it.toFahrenheit() }
