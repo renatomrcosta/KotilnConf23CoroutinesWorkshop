@@ -6,21 +6,47 @@ import androidx.compose.runtime.setValue
 import com.kotlinconf.workshop.articles.model.Article
 import com.kotlinconf.workshop.articles.network.BlogService
 import com.kotlinconf.workshop.articles.network.BlogServiceBlocking
-import com.kotlinconf.workshop.articles.tasks.*
-import com.kotlinconf.workshop.articles.ui.ArticlesViewModel.LoadingStatus.*
-import com.kotlinconf.workshop.articles.ui.LoadingMode.*
+import com.kotlinconf.workshop.articles.tasks.loadArticlesConcurrently
+import com.kotlinconf.workshop.articles.tasks.loadArticlesNonCancelable
+import com.kotlinconf.workshop.articles.tasks.observeArticlesConcurrently
+import com.kotlinconf.workshop.articles.tasks.observeArticlesLoading
+import com.kotlinconf.workshop.articles.tasks.observeArticlesUnstable
+import com.kotlinconf.workshop.articles.tasks.observeArticlesUnstableWithRetry
+import com.kotlinconf.workshop.articles.ui.ArticlesViewModel.LoadingStatus.CANCELED
+import com.kotlinconf.workshop.articles.ui.ArticlesViewModel.LoadingStatus.COMPLETED
+import com.kotlinconf.workshop.articles.ui.ArticlesViewModel.LoadingStatus.FAILED
+import com.kotlinconf.workshop.articles.ui.ArticlesViewModel.LoadingStatus.IN_PROGRESS
+import com.kotlinconf.workshop.articles.ui.ArticlesViewModel.LoadingStatus.NOT_STARTED
+import com.kotlinconf.workshop.articles.ui.LoadingMode.BLOCKING
+import com.kotlinconf.workshop.articles.ui.LoadingMode.CONCURRENT
+import com.kotlinconf.workshop.articles.ui.LoadingMode.CONCURRENT_WITH_PROGRESS
+import com.kotlinconf.workshop.articles.ui.LoadingMode.NON_CANCELABLE
+import com.kotlinconf.workshop.articles.ui.LoadingMode.SUSPENDING
+import com.kotlinconf.workshop.articles.ui.LoadingMode.UNSTABLE_NETWORK
+import com.kotlinconf.workshop.articles.ui.LoadingMode.UNSTABLE_WITH_RETRY
+import com.kotlinconf.workshop.articles.ui.LoadingMode.WITH_PROGRESS
 import com.kotlinconf.workshop.articles.util.loadStoredMode
 import com.kotlinconf.workshop.articles.util.removeStoredMode
 import com.kotlinconf.workshop.articles.util.saveParams
 import io.ktor.utils.io.CancellationException
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.runningFold
+import kotlinx.coroutines.launch
 import loadArticles
 
 class ArticlesViewModel(
     private val blockingService: BlogServiceBlocking,
     private val service: BlogService,
-    parentScope: CoroutineScope
+    parentScope: CoroutineScope,
 ) {
     private val coroutineExceptionHandler = CoroutineExceptionHandler { _, exception ->
         markLoadingCompletion(exception)
@@ -28,7 +54,7 @@ class ArticlesViewModel(
 
     // Task: Use SupervisorJob to handle errors
     // Replace Job() with SupervisorJob() and make sure the app keeps working on a child failure (LoadingMode.UNSTABLE_NETWORK).
-    private val scope = CoroutineScope(parentScope.coroutineContext + Job() + coroutineExceptionHandler)
+    private val scope = CoroutineScope(parentScope.coroutineContext + SupervisorJob() + coroutineExceptionHandler)
 
     var loadingMode by mutableStateOf(BLOCKING)
         private set
@@ -130,7 +156,7 @@ class ArticlesViewModel(
 
     private suspend fun updateResultsWithProgress(
         articleFlow: Flow<Article>,
-        startTime: Long
+        startTime: Long,
     ) {
         articleFlow
             .runningFold(listOf<Article>()) { list, article -> list + article }
