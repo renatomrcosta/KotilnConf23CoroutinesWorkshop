@@ -7,13 +7,13 @@ import com.kotlinconf.workshop.kettle.FahrenheitTemperature
 import com.kotlinconf.workshop.kettle.KettlePowerState
 import com.kotlinconf.workshop.kettle.network.KettleService
 import com.kotlinconf.workshop.kettle.toFahrenheit
+import com.kotlinconf.workshop.kettle.utils.averageOfLast
 import com.kotlinconf.workshop.util.log
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
@@ -37,7 +37,7 @@ class KettleViewModel(
         CoroutineExceptionHandler { _, throwable -> showErrorMessage(throwable) }
 
     private val scope = CoroutineScope(
-        parentScope.coroutineContext
+        parentScope.coroutineContext,
     )
 
     fun switchOn() {
@@ -63,10 +63,7 @@ class KettleViewModel(
         celsiusTemperature.map { it.toFahrenheit() }
 
     val smoothCelsiusTemperature: Flow<CelsiusTemperature?> =
-        flowOf(null)
-//        celsiusTemperature.map {
-//            it.value
-//        }.averageOfLast(5).map {
-//            CelsiusTemperature(it)
-//        }
+        celsiusTemperature.map { it.value }.averageOfLast(5).map {
+            CelsiusTemperature(it)
+        }
 }
