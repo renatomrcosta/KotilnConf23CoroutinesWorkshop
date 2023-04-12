@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-
 class ChatViewModel(private val chatService: ChatService) {
     private val scope = CoroutineScope(SupervisorJob())
 
@@ -30,7 +29,14 @@ class ChatViewModel(private val chatService: ChatService) {
 
     init {
         scope.launch {
-            // TODO
+            chatService.observeMessageEvents().collect { message ->
+                if (message.isImportant()) {
+                    // The state is a full list, but you can simply update the values by sending a diffed version
+                    _importantMessages.update { it + message }
+                } else {
+                    _allOtherMessages.update { it + message }
+                }
+            }
         }
     }
 }
