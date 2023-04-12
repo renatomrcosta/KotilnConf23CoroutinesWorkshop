@@ -15,6 +15,7 @@ import com.kotlinconf.workshop.articles.util.saveParams
 import io.ktor.utils.io.CancellationException
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import loadArticles
 
 class ArticlesViewModel(
     private val blockingService: BlogServiceBlocking,
