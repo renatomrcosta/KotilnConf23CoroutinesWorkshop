@@ -6,12 +6,14 @@ import com.kotlinconf.workshop.kettle.CelsiusTemperature
 import com.kotlinconf.workshop.kettle.FahrenheitTemperature
 import com.kotlinconf.workshop.kettle.KettlePowerState
 import com.kotlinconf.workshop.kettle.network.KettleService
+import com.kotlinconf.workshop.kettle.toFahrenheit
 import com.kotlinconf.workshop.util.log
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class KettleViewModel(
@@ -55,7 +57,7 @@ class KettleViewModel(
         kettleService.observeTemperature()
 
     val fahrenheitTemperature: Flow<FahrenheitTemperature?> =
-        flowOf(null)
+        celsiusTemperature.map { it.toFahrenheit() }
 
     val smoothCelsiusTemperature: Flow<CelsiusTemperature?> =
         flowOf(null)
