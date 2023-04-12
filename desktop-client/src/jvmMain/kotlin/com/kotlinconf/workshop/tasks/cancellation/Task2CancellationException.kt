@@ -1,14 +1,18 @@
 package com.kotlinconf.workshop.tasks.cancellation
 
-import kotlinx.coroutines.*
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
 
 fun main() = runBlocking {
     val myJob = launch {
-        while (true) {
+        while (isActive) {
             try {
                 doSomeWorkThatMayFail()
-            } catch (e: Exception) {
+            } catch (e: MyException) {
                 println("Oops! ${e.message}")
             }
         }
@@ -27,4 +31,4 @@ suspend fun doSomeWorkThatMayFail() {
     }
 }
 
-class MyException(message: String): Exception(message)
+class MyException(message: String) : Exception(message)
