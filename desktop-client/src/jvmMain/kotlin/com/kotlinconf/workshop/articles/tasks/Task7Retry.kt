@@ -10,7 +10,14 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retry
 
 fun observeArticlesUnstableWithRetry(service: BlogService): Flow<Article> = flow {
-    TODO()
+    val articleInfoList = service.getArticleInfoList()
+    for (articleInfo in articleInfoList) {
+        val comments = flow { emit(getCommentsWithRetry(service, articleInfo)) }.retry(10) {
+            println("Retrying again $it")
+            true
+        }.first()
+        emit(Article(articleInfo, comments))
+    }
 }
 
 suspend fun getCommentsWithRetry(service: BlogService, articleInfo: ArticleInfo): List<Comment> {
