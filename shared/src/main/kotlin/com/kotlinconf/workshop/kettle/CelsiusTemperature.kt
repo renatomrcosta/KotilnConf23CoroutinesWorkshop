@@ -24,7 +24,7 @@ val Double.celsius get() = CelsiusTemperature(this)
 @JvmInline
 value class FahrenheitTemperature(val value: Double) {
     override fun toString(): String {
-        return "${value.roundToInt()}"
+        return value.toString()
     }
 }
 
